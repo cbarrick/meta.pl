@@ -18,7 +18,7 @@
 % meta-predicates and a handful of basic meta-predicates based on this system.
 %
 % Templating is implemented by the predicate, replace/3, which takes a template
-% term and subsitutes arguments for placeholders. Placeholder terms are of the
+% term and substitutes arguments for placeholders. Placeholder terms are of the
 % form $K and are replaced by the Kth argument.
 %
 % For example:
@@ -30,7 +30,7 @@
 % The rest of the library is dedicated to meta-predicates that take advantage of
 % templates. The most basic is call_tmpl/2 which takes a template and arguments
 % and calls the goal resulting from the instantiation of the template. The most
-% useful of these may be for/2, which maps a template goal over a list.
+% useful may be for/2, which maps a template goal over a list.
 %
 % For example, to assert that a collection of lists all have length 2:
 % ```
@@ -49,12 +49,13 @@
 % F = foo.
 % ```
 %
-% Like for/2, most of the meta-predicates loop over lists. All looping
+% Like for/2, many of the meta-predicates loop over lists. All looping
 % constructs accept terms of the form range(A,Z,S) and range(A,Z) which behaves
 % as the the range [A,Z) discretized with a stride of S. In the latter form, S
 % is taken to be 1 or -1 depending on the order of A and Z. In SWI Prolog, the
 % looping constructs can loop over the pairs of a dict as well. External code
-% can lean on the looping predicates iterable/3 and interables/3.
+% can lean on the predicates iterable/3 and interables/3 to loop over lists,
+% dicts, and ranges.
 
 :- module(meta, [
 	replace/3,
@@ -75,34 +76,19 @@
 % -------------------------
 
 %% replace(+Template, +Arguments, -Term) is det
-% Term is like Template except all subterms of the form $N in Templace are
-% replaced by the Nth term in Arguments. If N is not an index of Arguments, the
-% term is not replaced. Arguments my also include $N terms. Variables are
-% replaced by new ones. To prevent a replacement, escape the term with \/1.
-%
-% In SWI Prolog, Arguments may be a dict, and $K is replaced by the value
-% under the key K.
-%
-% For example:
-% ```
-% ?- replace(foo($1, $2), [bar, baz($1)], X).
-% X = foo(bar, baz(bar)).
-% ```
-%
-% Terms may be escaped from replacement with \/1:
-% ```
-% ?- replace(foo(\($1), $2), [bar, baz($1)], X).
-% X = foo($1, baz(bar)).
-%
-% ?- replace(\foo($1, $2), [bar, baz($1)], X).
-% X = foo($1, $2).
-% ```
-
-% The actual replacement is handled by replace/4. The fourth argument is a
-% mapping of variable replacements. The mapping is implemented on an open-list
-% and thus is not initially instantiated.
+% Term is like Template except all subterms of the form $K in Template are
+% replaced by the Kth term in Arguments. In SWI Prolog, Arguments may be a dict.
+% If K is not an index or key of Arguments, the term is not replaced.
+% Arguments my also include $K terms which are replaced recursively. Variables
+% are replaced by new ones. To prevent a replacement, escape the term with \/1.
 replace(Template, Args, Term) :-
 	replace(Template, Args, Term, _Vars).
+
+
+%% replace(+Template, +Arguments, -Term, --Vars) is det
+% Implementation of replace/3. Vars is an open list used to store pairs mapping
+% the original variables in Template to the replacement variables in Term. See
+% replace_vars for details on how the list is maintained.
 
 % Variables are substituted, but references to the same variable must be
 % substituted by the same replacement. Must be first clause.
@@ -161,17 +147,16 @@ replace(Template, Arguments, Term, Vars) :-
 % Key is not found, a new Key-Value pair is inserted where Value is a new
 % variable. The indended use of this predicate is to maintain the mapping of
 % variable replacements.
-replace_vars(Key, Pairs, Value) :-
-	var(Pairs), !, Pairs=[Key-Value|_]
-	; Pairs=[X-Y|_], Key==X, !, Value=Y
-	; Pairs=[_|T], !, replace_vars(Key, T, Value).
+replace_vars(Key, Pairs, Value)   :- var(Pairs), !, Pairs=[Key-Value|_].
+replace_vars(Key, [X-Y|_], Value) :- Key==X, !, Value=Y.
+replace_vars(Key, [_|T], Value)   :- !, replace_vars(Key, T, Value).
 
 
 % Meta-predicates
 % -------------------------
 
 %% call_tmpl(:Template, +Arguments) is nondet
-% Interpolates Arguments into Template with replace/3 and calls the result.
+% Substitutes Arguments into Template with replace/3 and calls the result.
 :- meta_predicate call_tmpl(0,+).
 call_tmpl(Template, Arguments) :-
 	replace(Template, Arguments, Goal),
@@ -179,7 +164,7 @@ call_tmpl(Template, Arguments) :-
 
 
 %% once_tmpl(:Template, +Arguments) is semidet
-% Interpolates Arguments into Template with replace/3 and calls the result once,
+% Substitutes Arguments into Template with replace/3 and calls the result once,
 % cutting any leftover choice-points.
 :- meta_predicate once_tmpl(0,+).
 once_tmpl(Template, Arguments) :-
@@ -188,7 +173,7 @@ once_tmpl(Template, Arguments) :-
 
 
 %% ignore_tmpl(:Template, +Arguments) is det
-% Interpolates Arguments into Template with replace/3 and calls the result once,
+% Substitutes Arguments into Template with replace/3 and calls the result once,
 % cutting any leftover choice-points and succeeding regardless of whether the
 % subgoal succeeds.
 :- meta_predicate ignore_tmpl(0,+).
@@ -292,7 +277,7 @@ scan([Vn], Vn, [[]|_], _).
 % ```
 % ?- foldp(V, 0, [1,2,3,4,5], $1 is $2 + $3).
 % V = 15.
-% ```~
+% ```
 :- meta_predicate foldp(-,+,+,0).
 foldp(Folded, Id, Tree, Template) :-
 	map([Tree], is_list($1)),
