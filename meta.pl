@@ -50,12 +50,12 @@
 % ```
 %
 % Like for/2, many of the meta-predicates loop over lists. All looping
-% constructs accept terms of the form range(A,Z,S) and range(A,Z) which behaves
-% as the the range [A,Z) discretized with a stride of S. In the latter form, S
-% is taken to be 1 or -1 depending on the order of A and Z. In SWI Prolog, the
-% looping constructs can loop over the pairs of a dict as well. External code
-% can lean on the predicates iterable/3 and interables/3 to loop over lists,
-% dicts, and ranges.
+% predicates accept terms of the form range(A,Z,S) and range(A,Z) which behave
+% as lists containing the range [A,Z) discretized with a stride of S. In the
+% latter form, S is taken to be 1 or -1 depending on the order of A and Z. In
+% SWI Prolog, the looping predicates can loop over the pairs of a dict as well.
+% External code can lean on the predicates iterable/3 and interables/3 to loop
+% over lists, dicts, and ranges.
 
 :- module(meta, [
 	replace/3,
@@ -152,7 +152,7 @@ replace_vars(Key, [X-Y|_], Value) :- Key==X, !, Value=Y.
 replace_vars(Key, [_|T], Value)   :- !, replace_vars(Key, T, Value).
 
 
-% Meta-predicates
+% Calling
 % -------------------------
 
 %% call_tmpl(:Template, +Arguments) is nondet
@@ -184,8 +184,11 @@ ignore_tmpl(Template, Arguments) :-
 ignore_tmpl(_,_).
 
 
+% Looping
+% -------------------------
+
 %% for(+Iter, :Template)
-% Sugar for `map([Iter], Template)`
+% Sugar for map([Iter], Template).
 :- meta_predicate for(+,0).
 for(I, T) :- map([I], T).
 
@@ -312,7 +315,7 @@ mapp(Mapped, Tree, Template) :-
 	map([Mapped, Tree], Template).
 
 
-% Helper predicates
+% Miscellaneous
 % -------------------------
 
 %% iterable(?Iter, ?H, ?T) is semidet

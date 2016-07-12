@@ -28,7 +28,7 @@ For example, to assert that a collection of terms all have the same functor:
 F = foo.
 ```
 
-Like for/2, many of the meta-predicates loop over lists. All looping constructs accept terms of the form range(A,Z,S) and range(A,Z) which behave as the the range [A,Z) discretized with a stride of S. In the latter form, S is taken to be 1 or -1 depending on the order of A and Z. In SWI Prolog, the looping constructs can loop over the pairs of a dict as well. External code can lean on the predicates iterable/3 and interables/3 to loop over lists, dicts, and ranges.
+Like for/2, many of the meta-predicates loop over lists. All looping predicates accept terms of the form range(A,Z,S) and range(A,Z) which behave as lists containing the range [A,Z) discretized with a stride of S. In the latter form, S is taken to be 1 or -1 depending on the order of A and Z. In SWI Prolog, the looping predicates can loop over the pairs of a dict as well. External code can lean on the predicates iterable/3 and interables/3 to loop over lists, dicts, and ranges.
 
 
 ## Why
@@ -59,7 +59,7 @@ Substitutes Arguments into Template with replace/3 and calls the result once, cu
 ### Looping
 
 #### for(+Iter, :Template)
-Sugar for map([Iter], Template)
+Sugar for map([Iter], Template).
 
 #### map(+Iters, :Template)
 Maps the Template goal over the Iters. Terms of the form $N in the Template are replaced by the value of the Nth iterable.
