@@ -144,7 +144,7 @@ The following are valid iterables:
 - Any term which can be called with an additional variable argument that is to be unified to a list containing the iterable's elements.
 
 Custom iterators should be implemented with freeze/2 as lazy lists. For example, consider this possible implementation for range/3:
-```
+```prolog
 range(A, Z, [A|T]) :-
     A < Z, !,
     freeze(T, (
