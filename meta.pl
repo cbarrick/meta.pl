@@ -212,7 +212,7 @@ map(Iters, Template) :-
 	!,
 	call_tmpl(Template, Heads),
 	map(Tails, Template).
-map([[]|_],_).
+map([[]|T],_) :- all_empty(T).
 
 
 %% fold(-V, +V0, +Iters, :Template)
@@ -236,7 +236,7 @@ fold(V, V0, Iters, Template) :-
 	!,
 	call_tmpl(Template, [V1,V0|Heads]),
 	fold(V, V1, Tails, Template).
-fold(V, V, [[]|_], _).
+fold(V, V, [[]|T], _) :- all_empty(T).
 
 
 %% scan(-Vs, +V0, +Iters, :Template)
@@ -255,7 +255,7 @@ scan([V0|Vs], V0, Iters, Template) :-
 	!,
 	call_tmpl(Template, [V1,V0|Heads]),
 	scan(Vs, V1, Tails, Template).
-scan([Vn], Vn, [[]|_], _).
+scan([Vn], Vn, [[]|T], _) :- all_empty(T).
 
 
 %% foldp(:Template, -Folded, +Identity, +Tree)
@@ -311,6 +311,12 @@ mapp(Mapped, Tree, Template) :-
 	map([Tree], is_list($1))
 	-> map([Mapped, Tree], mapp($1, $2, \Template))
 	; map([Mapped, Tree], Template).
+
+
+%% all_empty(+Lists)
+% All lists in Lists are empty.
+all_empty([]).
+all_empty([[]|T]) :- all_empty(T).
 
 
 % Iterables
