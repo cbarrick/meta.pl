@@ -1,4 +1,4 @@
-# Better meta-predicates for Prolog
+# Templated meta-predicates for Prolog
 
 This library provides a templating system to ease the development of meta-predicates and a handful of basic meta-predicates based on this system.
 

@@ -12,7 +12,7 @@
 % ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 % OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-%% <module> Better meta-predicates
+%% <module> Templated meta-predicates
 %
 % This library provides a templating system to ease the development of
 % meta-predicates and a handful of basic meta-predicates based on this system.
