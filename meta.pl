@@ -285,11 +285,9 @@ scan([Vn], Vn, [[]|_], _).
 % ```
 :- meta_predicate foldp(-,+,+,0).
 foldp(Folded, Id, Tree, Template) :-
-	map([Tree], is_list($1)),
-	!,
-	map([Folded, Tree], foldp($1, Id, $2, \Template)).
-foldp(Folded, Id, List, Template) :-
-	fold(Folded, Id, [List], Template).
+	map([Tree], is_list($1))
+	-> map([Folded, Tree], foldp($1, Id, $2, \Template))
+	; fold(Folded, Id, [Tree], Template).
 
 
 %% mapp(-Mapped, +Tree, :Template)
@@ -310,11 +308,9 @@ foldp(Folded, Id, List, Template) :-
 % ```
 :- meta_predicate mapp(+,-,0).
 mapp(Mapped, Tree, Template) :-
-	map([Tree], is_list($1)),
-	!,
-	map([Mapped, Tree], mapp($1, $2, \Template)).
-mapp(Mapped, Tree, Template) :-
-	map([Mapped, Tree], Template).
+	map([Tree], is_list($1))
+	-> map([Mapped, Tree], mapp($1, $2, \Template))
+	; map([Mapped, Tree], Template).
 
 
 % Iterables
@@ -351,7 +347,8 @@ iterable(Dict, H, T) :-
 	iterable(Pairs, H, T).
 
 iterable(Iter, H, T) :-
-	nonvar(Iter),
+	callable(Iter),
+	!,
 	call(Iter, [H|T]).
 
 
