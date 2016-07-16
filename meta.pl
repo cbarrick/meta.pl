@@ -49,13 +49,11 @@
 % F = foo.
 % ```
 %
-% Like for/2, many of the meta-predicates loop over lists. All looping
-% predicates accept terms of the form range(A,Z,S) and range(A,Z) which behave
-% as lists containing the range [A,Z) discretized with a stride of S. In the
-% latter form, S is taken to be 1 or -1 depending on the order of A and Z. In
-% SWI Prolog, the looping predicates can loop over the pairs of a dict as well.
-% External code can lean on the predicates iterable/3 and interables/3 to loop
-% over lists, dicts, and ranges.
+% Like for/2, many of the meta-predicates loop over collections. In addition to
+% lists, all looping predicates accept dicts (in SWI Prolog) and goals which,
+% when called with an additional variable argument, bind that argument to a
+% list (or dict). The included predicates range/3 and range/4 work with this
+% feature to simplify looping over lists of ordered numbers.
 
 :- module(meta, [
 	replace/3,
@@ -69,7 +67,9 @@
 	foldp/4,
 	mapp/3,
 	iterable/3,
-	iterables/3
+	iterables/3,
+	range/3,
+	range/4
 ]).
 
 % Templating
@@ -324,47 +324,23 @@ mapp(Mapped, Tree, Template) :-
 %
 % The following are valid iterables:
 % - Lists are iterables over their elements. The empty list is not an iterable.
-% - A term of the form range(A,Z,Stride) is an iterable over the half-open
-%   interval from A to Z with some possibly negative Stride. A range/3 term is
-%   only an iterable if Stride moves A closer to Z.
-% - Dicts in SWI Prolog are iterables over Key-Value pairs.
+% - Dicts in SWI Prolog are iterables over key-value pairs.
+% - Any term which can be called with an additional variable argument that is
+%   to be unified to a list containing the iterable's elements.
 %
-% Custom iterators can be implemented with freeze/2 as lazy lists:
+% Custom iterators should be implemented with freeze/2 as lazy lists. For
+% example, consider this possible implementation for range/3:
 % ```
-% range(Start, Stop, Iter) :-
-%     freeze(Iter, (
-%         Start < Stop ->
-%             Iter = [Start|T],
-%             Next is Start + 1,
-%             range(Next, Stop, T)
-%         ; Iter = []
+%
+% range(A, Z, [A|T]) :-
+%     A < Z, !,
+%     freeze(T, (
+%         B is A + 1,
+%         range(B, Z, T)
 %     )).
+% range(_, _, []).
 % ```
 iterable([H|T], H, T) :- !.
-
-iterable(range(A,Z), A, T) :- !,
-	A < Z,
-	B is A + 1,
-	( Z =< B ->
-		T = []
-	; T = range(B,Z)).
-
-iterable(range(A,Z,Stride), A, T) :- !,
-	Stride > 0,
-	!,
-	A < Z,
-	B is A + Stride,
-	( Z =< B ->
-		T = []
-	; T = range(B,Z)).
-iterable(range(A,Z,Stride), A, T) :- !,
-	Stride < 0,
-	!,
-	Z < A,
-	B is A + Stride,
-	( B =< Z ->
-		T = []
-	; T = range(B,Z)).
 
 iterable(Dict, H, T) :-
 	catch((
@@ -373,6 +349,10 @@ iterable(Dict, H, T) :-
 	), _, false),
 	!,
 	iterable(Pairs, H, T).
+
+iterable(Iter, H, T) :-
+	nonvar(Iter),
+	call(Iter, [H|T]).
 
 
 %% iterables(?Iters, ?Heads, ?Tails) is semidet
@@ -383,3 +363,45 @@ iterables([],[],[]).
 iterables([Iter|Iters], [H|Heads], [T|Tails]) :-
 	iterable(Iter, H, T),
 	iterables(Iters, Heads, Tails).
+
+
+%% range(+A, +Z, -Range) is det
+% Range is the list of numbers on the interval [A,Z) with a stride of ±1.
+% A may be less than or greater than Z.
+% Range is a lazy list, so large ranges are OK in deterministic settings.
+% This predicate can be used with iterable/3.
+range(A, Z, [A|T]) :- A < Z, !, range_up(A, Z, +1, [A|T]).
+range(A, Z, [A|T]) :- Z < A, !, range_down(A, Z, -1, [A|T]).
+
+
+%% range(+A, +Z, +S, -Range) is det
+% Range is the list of numbers on the interval [A,Z) with a stride of S.
+% If Z is less than A, S must be negative, otherwise S must be positive.
+% Range is a lazy list, so large ranges are OK in deterministic settings.
+% This predicate can be used with iterable/3.
+range(A, Z, S, [A|T]) :- A < Z, 0 < S, !, range_up(A, Z, S, [A|T]).
+range(A, Z, S, [A|T]) :- Z < A, S < 0, !, range_down(A, Z, S, [A|T]).
+
+
+%% range_up(+A, +Z, +S, -Range) is det
+% Implementation of range/4 when A < Z.
+% Assumes S is positive.
+range_up(A, Z, S, [A|T]) :-
+	freeze(T, (
+		B is A + S,
+		B < Z
+		-> range_up(B, Z, S, T)
+		; T = []
+	)).
+
+
+%% range_down(+A, +Z, +S, -Range) is det
+% Implementation of range/4 when Z < A.
+% Assumes S is negative.
+range_down(A, Z, S, [A|T]) :-
+	freeze(T, (
+		B is A + S,
+		Z < B
+		-> range_down(B, Z, S, T)
+		; T = []
+	)).

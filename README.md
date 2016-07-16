@@ -28,7 +28,7 @@ For example, to assert that a collection of terms all have the same functor:
 F = foo.
 ```
 
-Like for/2, many of the meta-predicates loop over lists. All looping predicates accept terms of the form range(A,Z,S) and range(A,Z) which behave as lists containing the range [A,Z) discretized with a stride of S. In the latter form, S is taken to be 1 or -1 depending on the order of A and Z. In SWI Prolog, the looping predicates can loop over the pairs of a dict as well. External code can lean on the predicates iterable/3 and interables/3 to loop over lists, dicts, and ranges.
+Like for/2, many of the meta-predicates loop over collections. In addition to lists, all looping predicates accept dicts (in SWI Prolog) and goals which, when called with an additional variable argument, bind that argument to a list (or dict). The included predicates range/3 and range/4 work with this feature to simplify looping over lists of ordered numbers.
 
 
 ## Why
@@ -140,23 +140,36 @@ Iter is an iterable with the head H and tail T. If Iter has only one element, T 
 
 The following are valid iterables:
 - Lists are iterables over their elements. The empty list is not an iterable.
-- A term of the form range(A,Z,Stride) is an iterable over the half-open interval from A to Z with some possibly negative Stride. A range/3 term is only an iterable if Stride moves A closer to Z.
-- Dicts in SWI Prolog are iterables over Key-Value pairs.
+- Dicts in SWI Prolog are iterables over key-value pairs.
+- Any term which can be called with an additional variable argument that is to be unified to a list containing the iterable's elements.
 
-Custom iterators can be implemented with freeze/2 as lazy lists:
-```prolog
-range(Start, Stop, Iter) :-
-	freeze(Iter, (
-		Start < Stop ->
-			Iter = [Start|T],
-			Next is Start + 1,
-			range(Next, Stop, T)
-		; Iter = []
-	)).
+Custom iterators should be implemented with freeze/2 as lazy lists. For example, consider this possible implementation for range/3:
+```
+range(A, Z, [A|T]) :-
+    A < Z, !,
+    freeze(T, (
+        B is A + 1,
+        range(B, Z, T)
+    )).
+range(_, _, []).
 ```
 
 #### iterables(?Iters, ?Heads, ?Tails) is semidet
-Iters is a collection of 0 or more iterables. Heads is a list of their heads. Tails is a list of their tails.
+Iters is a collection of 0 or more iterables.
+Heads is a list of their heads.
+Tails is a list of their tails.
+
+#### range(+A, +Z, -Range)
+Range is the list of numbers on the interval [A,Z) with a stride of ±1.
+A may be less than or greater than Z.
+Range is a lazy list, so large ranges are OK in deterministic settings.
+This predicate can be used with iterable/3.
+
+#### range(+A, +Z, +S, -Range)
+Range is the list of numbers on the interval [A,Z) with a stride of S.
+% If Z is less than A, S must be negative, otherwise S must be positive.
+Range is a lazy list, so large ranges are OK in deterministic settings.
+This predicate can be used with iterable/3.
 
 
 ## License
