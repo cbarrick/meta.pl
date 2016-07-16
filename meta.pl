@@ -72,11 +72,6 @@
 	range/4
 ]).
 
-% Dicts are only available in SWI Prolog.
-% Clauses which are special cases for dicts should fail on other systems.
-:- set_prolog_flag(unknown, fail).
-
-
 % Templating
 % -------------------------
 
@@ -122,10 +117,13 @@ replace($(N), Arguments, V, Vars) :-
 		replace(V0, Arguments, V, Vars)
 	; V = V0).
 
-% In SWI Prolog, Arguments may be a dict.
+% In SWI Prolog, Arguments may be a dict. The dict predicates will not be
+% defined in other Prologs, so we catch the error and treat it as failure.
 replace($(K), Arguments, V, Vars) :-
-	is_dict(Arguments),
-	get_dict(K, Arguments, V0),
+	catch((
+		is_dict(Arguments),
+		get_dict(K, Arguments, V0)
+	), _, false),
 	!,
 	(nonvar(V0) ->
 		replace(V0, Arguments, V, Vars)
@@ -347,8 +345,10 @@ all_empty([[]|T]) :- all_empty(T).
 iterable([H|T], H, T) :- !.
 
 iterable(Dict, H, T) :-
-	is_dict(Dict),
-	dict_pairs(Dict, _, Pairs),
+	catch((
+		is_dict(Dict),
+		dict_pairs(Dict, _, Pairs)
+	), _, false),
 	!,
 	iterable(Pairs, H, T).
 
