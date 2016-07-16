@@ -315,7 +315,7 @@ mapp(Mapped, Tree, Template) :-
 	map([Mapped, Tree], Template).
 
 
-% Miscellaneous
+% Iterables
 % -------------------------
 
 %% iterable(?Iter, ?H, ?T) is semidet

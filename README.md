@@ -133,7 +133,7 @@ mapp/3 is easier to read than map/2 for single list maps:
 M is [2, 3, 4, 5, 6].
 ```
 
-### Miscellaneous
+### Iterables
 
 #### iterable(?Iter, ?H, ?T) is semidet
 Iter is an iterable with the head H and tail T. If Iter has only one element, T must be [].
